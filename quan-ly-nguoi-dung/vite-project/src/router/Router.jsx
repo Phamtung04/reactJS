@@ -1,9 +1,8 @@
 import React from 'react'
 import { useRoutes } from 'react-router-dom';
-import Sidebar from '../components/sidebar/Sidebar';
-import MainLayout from '../layouts/mainLayout';
-import Table from '../components/tables/Table';
+import TableUser from '../layouts/tables/tableUser/Table';
 import Dashboard from '../layouts/Dashboard';
+import TableProduct from '../layouts/tables/tableProduct/TableProduct';
 
 const Router = () => {
     const element =  useRoutes([
@@ -12,13 +11,16 @@ const Router = () => {
             children:[
                 {
                     path: '/',
-                    element: <Table/>
+                    element: <TableUser/>
                 },
                 {
                     path: '/users',
-                    element: <Table/>,
+                    element: <TableUser/>,
                 },
-                
+                {
+                    path: '/products',
+                    element: <TableProduct/>,
+                },
             ]
         }
     ])

@@ -16,7 +16,7 @@ import { Link } from "react-router-dom";
 const SidebarNavigastion = () => {
   const arry = [
     { name: "Người dùng", icon: <PersonPinIcon />, link: "users" },
-    { name: "Đơn hàng", icon: <LocalGroceryStoreIcon />, link: "orders" },
+    { name: "Đơn hàng", icon: <LocalGroceryStoreIcon />, link: "products" },
     { name: "Quản lý bài viết", icon: <LibraryBooksIcon />, link: "posts" },
     { name: "Việc cần làm", icon: <InboxIcon />, link: "todo" },
   ];

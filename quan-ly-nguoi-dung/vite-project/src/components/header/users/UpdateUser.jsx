@@ -1,48 +1,67 @@
-import React from 'react'
-import { Box, Button, TextField } from "@mui/material";
+import React, { use, useEffect, useState } from "react";
+import { badgeClasses, Box, Button, TextField } from "@mui/material";
 import { Form, useForm } from "react-hook-form";
 import * as yup from "yup";
-import { yupResolver } from '@hookform/resolvers/yup';
+import { yupResolver } from "@hookform/resolvers/yup";
 import User from "../../../config/User";
-import axios from "axios";
 
-const UpdateUser = ({ handleCloseModal, id }) => {
-    const schema = yup.object().shape({
-        username: yup.string().required("Username is required"),
-        firstName: yup.string().required("First Name is required"),
-        lastName: yup.string().required("Last Name is required"),
-        age: yup.number().required("Age is required"),
-        email: yup.string().email().required("Email is required"),
-        phone: yup.string().required("Phone is required"),
-        password: yup.string().required("Password is required"),
-      });
-      const {register, handleSubmit, formState:{ errors }} = useForm({resolver: yupResolver(schema)});
-    
-      
-       
-      const onSubmit = async (data) => {
-        const userData = {
-          username: data.username,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          age: data.age,
-          email: data.email,
-          phone: data.phone,
-          password: data.password,
-        };
-        try {
-          const response = await User.upadteUser(id, userData);
-          console.log(response.data);
-        handleCloseModal();
+const UpdateUser = ({ handleCloseModal, id, reLoadData }) => {
+  const [userData, setUserData] = useState({});
 
-          // Hiển thị thông báo thành công cho người dùng
-        } catch (error) {
-          console.error(error);
-          // Hiển thị thông báo lỗi cho người dùng
+
+  const schema = yup.object().shape({
+    username: yup.string().required("Username is required"),
+    firstName: yup.string().required("First Name is required"),
+    lastName: yup.string().required("Last Name is required"),
+    age: yup.number().required("Age is required"),
+    email: yup.string().email().required("Email is required"),
+    phone: yup.string().required("Phone is required"),
+    password: yup.string().min(8,"length min 8").required("Password is required"),
+  });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset
+  } = useForm({ resolver: yupResolver(schema) });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await User.getById(id);
+        setUserData(response.data);
+        if (userData) {
+          reset(userData);
         }
-      };
-      
-   
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchData();
+  }, [id, reset]);
+
+
+  const onSubmit = async (data) => {
+    const userData = {
+      username: data.username,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      age: data.age,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+    };
+    try {
+      const response = await User.updateUser(id, userData);
+      console.log(response.data);
+      reLoadData();
+      handleCloseModal();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <>
       <Box
@@ -58,42 +77,50 @@ const UpdateUser = ({ handleCloseModal, id }) => {
         onSubmit={handleSubmit(onSubmit)}
       >
         <h1 className="text-1xl font-bold ml-12">Update user</h1>
-        <div >
+        <div>
           <TextField
             label="Username"
             id="outlined-size-small"
-            placeholder="Username"
             size="small"
-            {...register("username")}
+            value={userData.username || ""}
+            onChange={(e) => setUserData({ ...userData, username: e.target.value })} 
           />
-          <p className="text-red-500 text-xs ml-5">{errors.username?.message}</p>
+          <p className="text-red-500 text-xs ml-5">
+            {errors.username?.message}
+          </p>
           <TextField
             label="First Name"
             id="outlined-size-small"
-            placeholder="First Name"
             size="small"
-            {...register("firstName")}
+            value={userData.firstName || ""}
+            onChange={(e) => setUserData({ ...userData, firstName: e.target.value })}
           />
-          <p className="text-red-500 text-xs ml-5">{errors.firstName?.message}</p>
+          <p className="text-red-500 text-xs ml-5">
+            {errors.firstName?.message}
+          </p>
 
           <TextField
             label="Last Name"
             id="outlined-size-small"
-            placeholder="Last Name"
             size="small"
-            {...register("lastName")}
+            value={userData.lastName || ""}
+            onChange={(e) => setUserData({ ...userData, lastName: e.target.value })}
           />
-          <p className="text-red-500 text-xs ml-5">{errors.lastName?.message}</p>
+          <p className="text-red-500 text-xs ml-5">
+            {errors.lastName?.message}
+          </p>
 
           <TextField
             label="password"
             id="outlined-size-small"
-            placeholder="password"
             type="password"
             size="small"
-            {...register("password")}
+            value={userData.password || ""}
+            onChange={(e) => setUserData({ ...userData, password: e.target.value })}
           />
-          <p className="text-red-500 text-xs ml-5">{errors.password?.message}</p>
+          <p className="text-red-500 text-xs ml-5">
+            {errors.password?.message}
+          </p>
 
           <TextField
             label="Age"
@@ -102,24 +129,23 @@ const UpdateUser = ({ handleCloseModal, id }) => {
             inputProps={{ min: 1 }}
             size="small"
             defaultValue={1}
-            {...register("age")}
+            onChange={(e) => setUserData({ ...userData, age: e.target.value })}
           />
           <p className="text-red-500 text-xs ml-5">{errors.age?.message}</p>
 
           <TextField
             label="email"
             id="outlined-size-small"
-            placeholder="email"
             type="email"
             size="small"
-            {...register("email")}
+            value={userData.email || ""}
+            onChange={(e) => setUserData({ ...userData, email: e.target.value })}
           />
           <p className="text-red-500 text-xs ml-5">{errors.email?.message}</p>
-  
+
           <TextField
             label="phone"
             id="outlined-size-small"
-            placeholder="phone"
             type="number"
             size="small"
             sx={{
@@ -134,7 +160,8 @@ const UpdateUser = ({ handleCloseModal, id }) => {
                   margin: 0,
                 },
             }}
-            {...register("phone")}
+            value={userData.phone || ""}
+            onChange={(e) => setUserData({ ...userData, phone: e.target.value })}
           />
           <p className="text-red-500 text-xs ml-5">{errors.phone?.message}</p>
 
@@ -156,7 +183,7 @@ const UpdateUser = ({ handleCloseModal, id }) => {
         </div>
       </Box>
     </>
-  )
-}
+  );
+};
 
-export default UpdateUser
+export default UpdateUser;

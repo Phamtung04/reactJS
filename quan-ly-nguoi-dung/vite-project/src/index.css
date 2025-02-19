@@ -1,5 +1,5 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: Inter, system-ui, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -67,5 +67,20 @@ button:focus-visible {
   }
 }
 
+.flow::-webkit-scrollbar {
+  width: 9px; 
+  height: 10px;
+}
+
+.flow::-webkit-scrollbar-thumb {
+  background-color: #e7e4e4;
+    border-radius: 10px;
+    border: 2px solid transparent;
+}
+
+.flow::-webkit-scrollbar-track {
+  background: #f1f1f1;
+    border-radius: 10px;
+}
 
 @import "tailwindcss";

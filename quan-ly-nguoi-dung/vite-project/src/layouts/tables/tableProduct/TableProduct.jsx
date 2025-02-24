@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import CartProduct from "../../../components/card/cartProduct";
+import CartProduct from "../../../components/card/CartProduct";
 import {
   Box,
   Button,

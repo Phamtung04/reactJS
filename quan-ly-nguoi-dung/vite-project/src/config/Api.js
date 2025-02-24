@@ -8,7 +8,7 @@ const jwt = localStorage.getItem("jwt");
 
 const axiosClient = axios.create({
     baseURL: URL_API,
-    // timeout: 5000, 
+    timeout: 5000, 
     responseType: 'json',
     headers: {
         "Content-Type": "application/json",

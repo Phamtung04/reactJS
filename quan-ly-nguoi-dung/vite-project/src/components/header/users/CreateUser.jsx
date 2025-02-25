@@ -1,11 +1,13 @@
-import { Box, Button, TextField } from "@mui/material";
+import { Autocomplete, Box, Button, Chip, TextField } from "@mui/material";
 import React from "react";
-import { Form, useForm } from "react-hook-form";
+import { Controller, Form, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import User from "../../../config/User";
+import { useError } from "../../../context/ErrorContext";
 
 const CreateUser = ({ handleCloseModal, reLoadData }) => {
+  const { showError, showSuccess } = useError();
 
   const schema = yup.object().shape({
     username: yup.string().required("Username is required"),
@@ -13,38 +15,40 @@ const CreateUser = ({ handleCloseModal, reLoadData }) => {
     lastName: yup.string().required("Last Name is required"),
     age: yup.number().required("Age is required"),
     email: yup.string().email().required("Email is required"),
-    phone: yup.string().required("Phone is required"),
+    phone: yup
+      .array()
+      .of(
+        yup
+          .string()
+          .matches(/^\d{10}$/, "Số điện thoại phải có 10 chữ số")
+          .required("Số điện thoại không được để trống")
+      )
+      .min(1, "Phải nhập ít nhất một số điện thoại"),
+    // phone: yup.string().required("Phone is required"),
     password: yup.string().required("Password is required"),
   });
   const {
+    setError,
+    control,
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({ resolver: yupResolver(schema) });
 
   const onSubmit = (data) => {
-    // data.preventDefault();
-    const userData = {
-      username: data.username,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      age: data.age,
-      email: data.email,
-      phone: data.phone,
-      password: data.password,
-    };
-    console.log(userData);
-    User.create(userData)
+    console.log(data);
+    User.create(data)
       .then((response) => {
         reLoadData();
         handleCloseModal();
+        showSuccess("Thêm mới thành công");
         console.log(response.data);
       })
       .catch((error) => {
+        showError("Thêm mới thất bại");
         console.error(error);
       });
     console.log(data);
-    
   };
 
   return (
@@ -128,7 +132,7 @@ const CreateUser = ({ handleCloseModal, reLoadData }) => {
           />
           <p className="text-red-500 text-xs ml-5">{errors.email?.message}</p>
 
-          <TextField
+          {/* <TextField
             label="phone"
             id="outlined-size-small"
             placeholder="phone"
@@ -148,7 +152,58 @@ const CreateUser = ({ handleCloseModal, reLoadData }) => {
             }}
             {...register("phone")}
           />
-          <p className="text-red-500 text-xs ml-5">{errors.phone?.message}</p>
+          <p className="text-red-500 text-xs ml-5">{errors.phone?.message}</p> */}
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              <Autocomplete
+                multiple
+                freeSolo
+                options={[]}
+                value={field.value}
+                onChange={(_, newValue) => {
+                  const validPhones = newValue.filter((phone) =>
+                    /^\d{10}$/.test(phone)
+                  );
+
+                  if (newValue.some((phone) => !/^\d{10}$/.test(phone))) {
+                    setError("phone", {
+                      type: "manual",
+                      message: "Tất cả số điện thoại phải có 10 chữ số",
+                    });
+                  }
+
+                  field.onChange(validPhones);
+                }}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => {
+                    const { key, ...tagProps } = getTagProps({ index });
+                    return (
+                      <Chip
+                        variant="outlined"
+                        label={option}
+                        key={key}
+                        {...tagProps}
+                      />
+                    );
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="filled"
+                    label="Nhập số điện thoại"
+                    placeholder="Nhập số điện thoại (10 chữ số)"
+                    error={!!errors.phone}
+                    helperText={errors.phone?.message}
+                  />
+                )}
+              />
+            )}
+          />
+
+          {/*  */}
 
           <Button
             variant="outlined"

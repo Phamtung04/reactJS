@@ -4,9 +4,11 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import * as yup from "yup";
 import Product from '../../../config/Product';
+import { useError } from '../../../context/ErrorContext';
 
 
 const CreateProduct = ({handleCloseModal, reLoadData}) => {
+  const {showError, showSuccess} = useError();
 
   const Schema = yup.object().shape({
     name: yup.string().required("Name is required"),
@@ -30,8 +32,10 @@ const CreateProduct = ({handleCloseModal, reLoadData}) => {
     const response = await Product.create(dataProduct);
     console.log(response.data);
     handleCloseModal();
+    showSuccess("Thêm mới thành công");
     reLoadData(); 
     } catch (error) {
+      showError("Thêm mới thất bại");
       console.log(error);
     }
   };

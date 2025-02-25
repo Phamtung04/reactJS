@@ -1,33 +1,43 @@
-import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Button, TextField } from '@mui/material'
-import React, { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form';
+import { yupResolver } from "@hookform/resolvers/yup";
+import { Box, Button, TextField } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import * as yup from "yup";
-import Product from '../../../config/Product';
+import Product from "../../../config/Product";
+import { useError } from "../../../context/ErrorContext";
 
-const UpdateProduct = ({ handleCloseModal, id, reLoadData}) => {
+const UpdateProduct = ({ handleCloseModal, id, reLoadData }) => {
   const [productData, setProductData] = useState({});
 
- const Schema = yup.object().shape({
+  const { showError, showSuccess } = useError();
+
+  const Schema = yup.object().shape({
     name: yup.string().required("Name is required"),
     price: yup.number().required("Price is required"),
     quantity: yup.number().required("Category is required"),
     thumbnail: yup.string().required("Image is required"),
   });
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm({
     resolver: yupResolver(Schema),
   });
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await Product.getById(id);
         setProductData(response.data);
+        showSuccess("Update thành công");
         if (productData) {
           reset(productData);
         }
       } catch (error) {
+        showError("Update thất bại");
         console.log(error);
       }
     };
@@ -35,24 +45,15 @@ const UpdateProduct = ({ handleCloseModal, id, reLoadData}) => {
   }, [id, reset]);
 
   const onSubmit = async (data) => {
-    const dataProduct = {
-      title: data.name,
-      price: data.price,
-      quantity: data.quantity,
-      thumbnail: data.thumbnail,
-    };
     try {
-    const response = await Product.updateProduct(id, dataProduct);
-    console.log(response.data);
-    reLoadData();
-    handleCloseModal();
+      const response = await Product.updateProduct(id, data);
+      console.log(response.data);
+      reLoadData();
+      handleCloseModal();
     } catch (error) {
       console.log(error);
     }
   };
-
-
-
 
   return (
     <>
@@ -75,32 +76,34 @@ const UpdateProduct = ({ handleCloseModal, id, reLoadData}) => {
             id="outlined-size-small"
             size="small"
             value={productData.title || ""}
-            onChange={(e) => setProductData({ ...productData, title: e.target.value })}
+            onChange={(e) =>
+              setProductData({ ...productData, title: e.target.value })
+            }
           />
-          <p className="text-red-500 text-xs ml-5">
-            {errors.name?.message}
-          </p>
+          <p className="text-red-500 text-xs ml-5">{errors.name?.message}</p>
           <TextField
             label="Price"
             id="outlined-size-small"
             placeholder="Price"
             size="small"
-            type='number'
+            type="number"
             value={productData.price || ""}
-            onChange={(e) => setProductData({ ...productData, price: e.target.value })}
+            onChange={(e) =>
+              setProductData({ ...productData, price: e.target.value })
+            }
           />
-          <p className="text-red-500 text-xs ml-5">
-            {errors.price?.message}
-          </p>
+          <p className="text-red-500 text-xs ml-5">{errors.price?.message}</p>
 
           <TextField
             label="quantity"
             id="outlined-size-small"
             placeholder="quantity"
             size="small"
-            type='number'
+            type="number"
             value={productData.quantity || ""}
-            onChange={(e) => setProductData({ ...productData, quantity: e.target.value })}
+            onChange={(e) =>
+              setProductData({ ...productData, quantity: e.target.value })
+            }
           />
           <p className="text-red-500 text-xs ml-5">
             {errors.quantity?.message}
@@ -109,14 +112,14 @@ const UpdateProduct = ({ handleCloseModal, id, reLoadData}) => {
           <TextField
             id="outlined-size-small"
             size="small"
-            type='file'
+            type="file"
             {...register("thumbnail")}
             accept="image/png, image/jpeg"
           />
           <p className="text-red-500 text-xs ml-5">
             {errors.thumbnail?.message}
           </p>
-          
+
           <Button
             variant="outlined"
             sx={{
@@ -135,7 +138,7 @@ const UpdateProduct = ({ handleCloseModal, id, reLoadData}) => {
         </div>
       </Box>
     </>
-  )
-}
+  );
+};
 
 export default UpdateProduct;

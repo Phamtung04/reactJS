@@ -3,6 +3,7 @@ import User from "../../../config/User";
 import {
   Box,
   Button,
+  Chip,
   Input,
   Modal,
   Table,
@@ -20,6 +21,9 @@ import TuneIcon from "@mui/icons-material/Tune";
 import { useForm } from "react-hook-form";
 import StarIcon from "@mui/icons-material/Star";
 import CreateUser from "../../../components/header/users/CreateUser";
+import DeleteModal from "../../../components/delete/DeleteModal";
+import { useError } from "../../../context/ErrorContext";
+import exportToExcel from "../../../components/exportExcel/exportToExcel";
 
 const columns = [
   { id: "username", label: "Username", minWidth: 170 },
@@ -43,6 +47,10 @@ const TabletContainer = () => {
   const [isOpenCreate, setIsOpenCreate] = useState(false);
   const [id, setId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteUser, setDeleteUser] = useState(null);
+
+  const { showError, showSuccess } = useError();
 
   const handleOpenModal = (e) => {
     const id = e.currentTarget.dataset.id;
@@ -62,13 +70,24 @@ const TabletContainer = () => {
     setIsOpenCreate(false);
   };
 
-  const handleSubmitDelete = async (e) => {
-    const id = e.currentTarget.dataset.id;
+  const handleDelete = (user) => {
+    setDeleteUser(user);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleSubmitDelete = async () => {
     try {
-      const response = await User.deleteUser(id);
+      const response = await User.deleteUser(deleteUser?.id);
       fetchData();
       console.log(response);
+      showSuccess("Xóa thành công");
     } catch (error) {
+      const errerMessage = `Lỗi ${error.response.data.message}`;
+      showError(errerMessage);
       console.error(error);
     }
   };
@@ -80,28 +99,10 @@ const TabletContainer = () => {
         item.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.phone.some((phone) => phone.includes(searchTerm)) ||
         item.age.toString().includes(searchTerm)
     );
   }, [data, searchTerm]);
-
-  // const handleSearch = (e) => {
-  //   const search = e.target.value.toLowerCase();
-  //   if (search === "") {
-  //     fetchData();
-  //   }
-  //   const filteredData = data.filter((item) => {
-  //     return (
-  //       item.username.toLowerCase().includes(search) ||
-  //       item.firstName.toLowerCase().includes(search) ||
-  //       item.lastName.toLowerCase().includes(search) ||
-  //       item.email.toLowerCase().includes(search) ||
-  //       item.phone.toLowerCase().includes(search) ||
-  //       item.age.toString().includes(search)
-  //     );
-  //   });
-  //   setData(filteredData);
-  // }
 
   const fetchData = async () => {
     try {
@@ -140,6 +141,16 @@ const TabletContainer = () => {
     setPage(0);
   };
 
+  const handleExport = () => {
+    const userData = Array.isArray(data) ? data : [data];
+
+    const formattedData = userData.map((user) => ({
+      ...user,
+      phone: Array.isArray(user.phone) ? user.phone.join(", ") : user.phone,
+    }));
+
+    exportToExcel(formattedData, "User");
+  };
   return (
     <>
       <header className="bg-gray-100">
@@ -212,7 +223,19 @@ const TabletContainer = () => {
                       sx={{ "& button": { m: 1 } }}
                     >
                       {columns.map((column) => {
-                        const value = row[column.id];
+                        let value = row[column.id];
+
+                        if (column.id === "phone" && Array.isArray(value)) {
+                          value = value.map((phone, idx) => (
+                            <Chip
+                              key={idx}
+                              label={phone}
+                              sx={{ ml: 0.5 }}
+                              color={idx % 2 === 0 ? "primary" : "secondary"}
+                            />
+                          ));
+                        }
+
                         return (
                           <TableCell key={column.id} align={column.align}>
                             {column.format && typeof value === "number"
@@ -235,17 +258,6 @@ const TabletContainer = () => {
                       >
                         <TuneIcon />
                       </Button>
-                      <Modal
-                        sx={{ backgroundColor: "white" }}
-                        open={isOpen}
-                        onClose={handleCloseModal}
-                      >
-                        <UpdateUser
-                          handleCloseModal={handleCloseModal}
-                          id={id}
-                          reLoadData={fetchData}
-                        />
-                      </Modal>
                       <Button
                         variant="outlined"
                         sx={{
@@ -254,7 +266,7 @@ const TabletContainer = () => {
                           "&:focus": { outline: "none" },
                           "&:active": { outline: "none" },
                         }}
-                        onClick={handleSubmitDelete}
+                        onClick={() => handleDelete(row)}
                         data-id={row.id}
                       >
                         <DeleteForeverIcon className="text-red-400" />
@@ -267,6 +279,22 @@ const TabletContainer = () => {
                 No products found
               </p>
             )}
+
+            <Modal open={isOpen} onClose={handleCloseModal}>
+              <UpdateUser
+                handleCloseModal={handleCloseModal}
+                id={id}
+                reLoadData={fetchData}
+              />
+            </Modal>
+
+            <DeleteModal
+              open={isDeleteModalOpen}
+              onClose={handleCloseDeleteModal}
+              onDelete={handleSubmitDelete}
+              id={deleteUser?.id}
+              name={`user ${deleteUser?.username}`}
+            />
           </TableBody>
         </Table>
       </TableContainer>
@@ -279,6 +307,10 @@ const TabletContainer = () => {
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
+
+      <Button variant="contained" color="primary" onClick={handleExport} className="float-right mr-5 mt-5">
+        Xuất Excel
+      </Button>
     </>
   );
 };

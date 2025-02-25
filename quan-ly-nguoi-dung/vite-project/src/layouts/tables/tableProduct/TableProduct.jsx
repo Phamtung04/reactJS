@@ -15,6 +15,8 @@ import Product from "../../../config/Product";
 import TuneIcon from "@mui/icons-material/Tune";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import UpdateProduct from "../../../components/header/products/UpdateProduct";
+import DeleteModal from "../../../components/delete/DeleteModal";
+import { useError } from "../../../context/ErrorContext";
 
 const TableProduct = () => {
   const [isOpenCreate, setIsOpenCreate] = useState(false);
@@ -22,6 +24,10 @@ const TableProduct = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [id, setId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteProduct, setDeleteProduct] = useState(null);
+
+  const { showError, showSuccess } = useError();
 
   useEffect(() => {
     fetchData();
@@ -54,12 +60,23 @@ const TableProduct = () => {
     setIsOpen(false);
   };
 
+  const handleDelete = (product) => {
+    setDeleteProduct(product);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+  };
+
   const handleSubmitDelete = async (e) => {
-    const id = e.currentTarget.dataset.id;
     try {
-      await Product.deleteProduct(id);
+      await Product.deleteProduct(deleteProduct?.id);
       fetchData();
+      showSuccess("Xóa thành công");
     } catch (error) {
+      const errerMessage = `Lỗi ${error.response.data.message}`;
+      showError(errerMessage);
       console.log(error);
     }
   };
@@ -134,7 +151,9 @@ const TableProduct = () => {
                     "&:focus": { outline: "none" },
                     "&:active": { outline: "none" },
                   }}
-                  onClick={handleSubmitDelete}
+                  onClick={() => {
+                    handleDelete(item);
+                  }}
                   data-id={item.id}
                 >
                   <DeleteForeverIcon />
@@ -157,7 +176,6 @@ const TableProduct = () => {
       </Modal>
 
       <Modal
-        sx={{ backgroundColor: "white" }}
         open={isOpen}
         onClose={handleCloseModal}
       >
@@ -167,6 +185,14 @@ const TableProduct = () => {
           reLoadData={fetchData}
         />
       </Modal>
+
+      <DeleteModal
+        open={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+        onDelete={handleSubmitDelete}
+        id={deleteProduct?.id}
+        name={`product ${deleteProduct?.title}`}
+      />
     </>
   );
 };

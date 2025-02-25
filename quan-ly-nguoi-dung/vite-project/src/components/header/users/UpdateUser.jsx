@@ -1,19 +1,31 @@
 import React, { useEffect } from "react";
-import { Box, Button, TextField } from "@mui/material";
-import { useForm } from "react-hook-form";
+import { Autocomplete, Box, Button, Chip, TextField } from "@mui/material";
+import { Controller, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import User from "../../../config/User";
+import { useError } from "../../../context/ErrorContext";
 
 const UpdateUser = ({ handleCloseModal, id, reLoadData }) => {
+  const {showError, showSuccess} = useError();
+
   const schema = yup.object().shape({
     username: yup.string().required("Username is required"),
     firstName: yup.string().required("First Name is required"),
     lastName: yup.string().required("Last Name is required"),
     age: yup.number().required("Age is required"),
     email: yup.string().email().required("Email is required"),
-    phone: yup.string().required("Phone is required"),
+    // phone: yup.string().required("Phone is required"),
+    phone: yup
+      .array()
+      .of(
+        yup
+          .string()
+          .matches(/^\d{10}$/, "Số điện thoại phải có 10 chữ số")
+          .required("Số điện thoại không được để trống")
+      )
+      .min(1, "Phải nhập ít nhất một số điện thoại"),
     password: yup
       .string()
       .min(8, "Length min 8")
@@ -21,11 +33,15 @@ const UpdateUser = ({ handleCloseModal, id, reLoadData }) => {
   });
 
   const {
+    setError,
+    control,
     handleSubmit,
     formState: { errors },
     reset,
     register,
   } = useForm({ resolver: yupResolver(schema) });
+
+
 
   const { data: userData, isLoading } = useQuery({
     queryKey: ["user", id],
@@ -43,19 +59,27 @@ const UpdateUser = ({ handleCloseModal, id, reLoadData }) => {
     }
   }, [userData, reset]);
 
-
   const queryClient = useQueryClient();
   const updateUserMutation = useMutation({
-    mutationFn: async (data) => await User.updateUser(id, data),
+    mutationFn: async (data) => await User.updateUser(id, data), 
     onSuccess: () => {
       queryClient.invalidateQueries(["user", id]);
+      showSuccess("Cập nhật thành công");
       reLoadData();
       handleCloseModal();
+    },
+    onError: (error) => {
+      showError("Cập nhật thất bại");
+      console.error("Lỗi cập nhật:", error.response?.data || error.message);
+      setError("server", { message: "Cập nhật thất bại, vui lòng thử lại." });
     },
   });
 
   const onSubmit = (data) => {
-    updateUserMutation.mutate(data);
+    const phones = data.phone.map((phone) => phone);
+    const updatedData = { ...data, phone: phones };
+    console.log(data);
+    updateUserMutation.mutate(updatedData);
   };
 
   return (
@@ -122,13 +146,64 @@ const UpdateUser = ({ handleCloseModal, id, reLoadData }) => {
             error={!!errors.email}
             helperText={errors.email?.message}
           />
-          <TextField
+          {/* <TextField
             label="Phone"
             type="number"
             size="small"
             {...register("phone")}
             error={!!errors.phone}
             helperText={errors.phone?.message}
+          /> */}
+
+          <Controller
+            name="phone"
+            control={control}
+            render={({ field }) => (
+              console.log("Field value:", field.value),
+              <Autocomplete
+                multiple
+                freeSolo
+                options={[]}
+                value={field.value || []}
+                onChange={(_, newValue) => {
+                  const validPhones = newValue.filter((phone) =>
+                    /^\d{10}$/.test(phone)
+                  );
+
+                  if (newValue.some((phone) => !/^\d{10}$/.test(phone))) {
+                    setError("phone", {
+                      type: "manual",
+                      message: "Tất cả số điện thoại phải có 10 chữ số",
+                    });
+                  }
+
+                  field.onChange(validPhones);
+                }}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => {
+                    const { key, ...tagProps } = getTagProps({ index });
+                    return (
+                      <Chip
+                        variant="outlined"
+                        label={option}
+                        key={key}
+                        {...tagProps}
+                      />
+                    );
+                  })
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="filled"
+                    label="Nhập số điện thoại"
+                    placeholder="Nhập số điện thoại (10 chữ số)"
+                    error={!!errors.phone}
+                    helperText={errors.phone?.message}
+                  />
+                )}
+              />
+            )}
           />
 
           <Button
